@@ -19,15 +19,18 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
 
 using namespace std::chrono;
 
-#include <VPSDK/VP.h>
+#include <Aw.h>
+
+typedef void* AWInstance;
+
 
 #include "botsettings.hpp"
 
 using namespace std;
 
-void event_avatar_add(VPInstance sdk);
-void event_avatar_delete(VPInstance sdk);
-void event_chat(VPInstance sdk);
+void event_avatar_add();
+void event_avatar_delete();
+void event_chat();
 
 static void write_message(std::string message);
 
@@ -206,28 +209,32 @@ int main(int argc, char ** argv) {
     websocket.settings = &settings;
 
     int err = 0;
-    VPInstance sdk;
 
-    if (err = vp_init(VPSDK_VERSION)) {
+    AWInstance sdk;
+
+    if (err = aw_init(AW_BUILD)) {
         cerr << "ERROR: Couldn't initialize VP API (reason " << err << ")" << endl;
         return -err;
     }
 
-    sdk = vp_create(nullptr);
-
-    if (err = vp_connect_universe(sdk, "universe.virtualparadise.org", 57000)) {
+    if (err = aw_create(NULL, 0, &sdk)) {
         cerr << "ERROR: Couldn't connect to universe (reason " << err << ")" << endl;
         return -err;
     }
 
-    if (err = vp_login(sdk, settings.auth.username.c_str(), settings.auth.password.c_str(), settings.bot.name.c_str())) {
+	aw_int_set(AW_LOGIN_OWNER, settings.auth.username);
+	aw_string_set(AW_LOGIN_PRIVILEGE_PASSWORD, settings.auth.password.c_str());
+	aw_string_set(AW_LOGIN_NAME, settings.bot.name.c_str());
+
+
+    if (err = aw_login()) {
         cerr << "ERROR: Couldn't login (reason " << err << ")" << endl;
         return -err;
     }
 
     //if (err = vp_world_setting_set(sdk))
 
-    if (err = vp_enter(sdk, settings.bot.world.c_str())) {
+    if (err = aw_enter(settings.bot.world.c_str())) {
         cerr << "ERROR: Couldn't enter " << settings.bot.world << " (reason " << err << ")" << endl;
         return -err;
     } else {
@@ -235,17 +242,26 @@ int main(int argc, char ** argv) {
     }
 
     started = system_clock::now();
-    vp_event_set(sdk, VP_EVENT_AVATAR_ADD, event_avatar_add);
-    vp_event_set(sdk, VP_EVENT_AVATAR_DELETE, event_avatar_delete);
-    vp_event_set(sdk, VP_EVENT_CHAT, event_chat);
-    vp_state_change(sdk);
+    aw_event_set(AW_EVENT_AVATAR_ADD, event_avatar_add);
+    aw_event_set(AW_EVENT_AVATAR_DELETE, event_avatar_delete);
+    aw_event_set(AW_EVENT_CHAT, event_chat);
+    aw_state_change();
 
-    while (vp_wait(sdk, 100) == 0) {
+    while (aw_wait(100) == 0) {
         std::this_thread::sleep_for(milliseconds(50));
         std::lock_guard<std::mutex> lock{ websocket.read_mtx };
-
+		aw_bool_set(AW_CONSOLE_ITALICS, 0);
+		aw_bool_set(AW_CONSOLE_BOLD, 0);
+		aw_int_set(AW_CONSOLE_RED, 0);
+		aw_int_set(AW_CONSOLE_GREEN, 0);
+		aw_int_set(AW_CONSOLE_BLUE, 0);
         for (auto message : websocket.messages_to_send) {
-            vp_console_message(sdk, 0, message.name.c_str(), message.message.c_str(), 0, 0, 0, 0);
+			std::string full_message;
+			full_message.append(message.name);
+			full_message.append(":\t");
+			full_message.append(message.message);
+			aw_string_set(AW_CONSOLE_MESSAGE, full_message.c_str());
+			aw_console_message(0);
         }
         websocket.messages_to_send.clear();
     }
@@ -256,9 +272,9 @@ int main(int argc, char ** argv) {
     return 0;
 }
 
-void event_avatar_add(VPInstance sdk) {
-    int session(vp_int(sdk, VP_AVATAR_SESSION));
-    std::string name(vp_string(sdk, VP_AVATAR_NAME));
+void event_avatar_add() {
+    int session(aw_int(AW_AVATAR_SESSION));
+    std::string name(aw_string(AW_AVATAR_NAME));
 
 
     std::lock_guard<std::mutex> lock{liu_mtx};
@@ -279,9 +295,9 @@ void event_avatar_add(VPInstance sdk) {
     write_message(ss.str());
 }
 
-void event_avatar_delete(VPInstance sdk) {
-    int session(vp_int(sdk, VP_AVATAR_SESSION));
-    std::string name(vp_string(sdk, VP_AVATAR_NAME));
+void event_avatar_delete() {
+    int session(aw_int(AW_AVATAR_SESSION));
+    std::string name(aw_string(AW_AVATAR_NAME));
     stringstream ss;
     ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"**Has left " << client->settings->bot.world << ".**\" }";
     cout << ss.str() << endl;
@@ -290,10 +306,10 @@ void event_avatar_delete(VPInstance sdk) {
     logged_in_users.erase(session);
 }
 
-void event_chat(VPInstance sdk) {
+void event_chat() {
     stringstream ss;
-    std::string name(vp_string(sdk, VP_AVATAR_NAME));
-    std::string message(vp_string(sdk, VP_CHAT_MESSAGE));
+    std::string name(aw_string(AW_AVATAR_NAME));
+    std::string message(aw_string(AW_CHAT_MESSAGE));
 
     if (name.substr(0, 3) == std::string("[d-")) {
         return; // Ignore discord messages.

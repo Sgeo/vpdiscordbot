@@ -11,7 +11,7 @@ namespace vpdiscordbot {
 
 struct AuthSection
 {
-    std::string username;
+    int username;
     std::string password;
 };
 
@@ -46,7 +46,7 @@ void from_json(const nlohmann::json& j, Settings& s)
         throw std::runtime_error("Malformed settings file!");
     }
 
-	s.auth.username = j["vp"]["auth"]["username"].get<std::string>();
+	s.auth.username = j["vp"]["auth"]["username"].get<int>();
     s.auth.password = j["vp"]["auth"]["password"].get<std::string>();
     s.bot.name = j["vp"]["bot"]["name"].get<std::string>();
     s.bot.world = j["vp"]["bot"]["world"].get<std::string>();
