@@ -222,6 +222,8 @@ int main(int argc, char ** argv) {
         return -err;
     }
 
+	aw_string_set_MBCS_codepage(65001);
+
 	aw_int_set(AW_LOGIN_OWNER, settings.auth.username);
 	aw_string_set(AW_LOGIN_PRIVILEGE_PASSWORD, settings.auth.password.c_str());
 	aw_string_set(AW_LOGIN_NAME, settings.bot.name.c_str());
@@ -246,6 +248,7 @@ int main(int argc, char ** argv) {
     aw_event_set(AW_EVENT_AVATAR_DELETE, event_avatar_delete);
     aw_event_set(AW_EVENT_CHAT, event_chat);
     aw_state_change();
+	aw_listen(AW_CHAT_CHANNEL_GLOBAL);
 
     while (aw_wait(100) == 0) {
         std::this_thread::sleep_for(milliseconds(50));
@@ -261,7 +264,13 @@ int main(int argc, char ** argv) {
 			full_message.append(":\t");
 			full_message.append(message.message);
 			aw_string_set(AW_CONSOLE_MESSAGE, full_message.c_str());
-			aw_console_message(0);
+			if (aw_bool(AW_WORLD_CARETAKER_CAPABILITY)) {
+				aw_console_message(0);
+			}
+			else {
+				aw_say_channel(full_message.c_str(), AW_CHAT_CHANNEL_GLOBAL);
+			}
+			
         }
         websocket.messages_to_send.clear();
     }
@@ -290,7 +299,7 @@ void event_avatar_add() {
     }
 
     stringstream ss;
-    ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"**Has joined " << client->settings->bot.world << ".**\" }";
+    ss << "{ \"name\" : \"aw-" << name << "\", \"message\": \"**Has joined " << client->settings->bot.world << ".**\" }";
     cout << ss.str() << endl;
     write_message(ss.str());
 }
@@ -299,7 +308,7 @@ void event_avatar_delete() {
     int session(aw_int(AW_AVATAR_SESSION));
     std::string name(aw_string(AW_AVATAR_NAME));
     stringstream ss;
-    ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"**Has left " << client->settings->bot.world << ".**\" }";
+    ss << "{ \"name\" : \"aw-" << name << "\", \"message\": \"**Has left " << client->settings->bot.world << ".**\" }";
     cout << ss.str() << endl;
     write_message(ss.str());
     std::lock_guard<std::mutex> lock{liu_mtx};
@@ -318,7 +327,7 @@ void event_chat() {
     // Let's escape the message.
     boost::replace_all(message, "\"", "\\\"");
 
-    ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"" << message << "\" }";
+    ss << "{ \"name\" : \"aw-" << name << "\", \"message\": \"" << message << "\" }";
     cout << ss.str() << endl;
     write_message(ss.str());
 }

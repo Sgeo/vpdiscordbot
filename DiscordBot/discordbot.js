@@ -90,6 +90,9 @@ client.on('ready', () => {
 client.on('message', message => {
     console.log(message.content);
     let username = message.author.username;
+    if(message.member && message.member.nickname) {
+        username = message.member.nickname;
+    }
     if (ws_client != undefined && !message.author.bot && channel_id == message.channel.id) {
         // Let's format the message.
 
