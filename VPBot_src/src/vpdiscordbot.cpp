@@ -243,6 +243,9 @@ int main(int argc, char ** argv) {
         cout << "Entered world..." << endl;
     }
 
+	aw_int_set(AW_MY_X, settings.bot.x);
+	aw_int_set(AW_MY_Z, settings.bot.z);
+
     started = system_clock::now();
     aw_event_set(AW_EVENT_AVATAR_ADD, event_avatar_add);
     aw_event_set(AW_EVENT_AVATAR_DELETE, event_avatar_delete);

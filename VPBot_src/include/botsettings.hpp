@@ -19,6 +19,8 @@ struct BotSection
 {
     std::string name;
     std::string world;
+	int x;
+	int z;
 };
 
 struct Settings
@@ -41,7 +43,9 @@ void from_json(const nlohmann::json& j, Settings& s)
         j["vp"]["auth"].count("username") == 0 ||
         j["vp"]["auth"].count("password") == 0 ||
         j["vp"]["bot"].count("name") == 0 ||
-        j["vp"]["bot"].count("world") == 0 )
+        j["vp"]["bot"].count("world") == 0  ||
+		j["vp"]["bot"].count("x") == 0 ||
+		j["vp"]["bot"].count("z") == 0)
     {
         throw std::runtime_error("Malformed settings file!");
     }
@@ -50,6 +54,8 @@ void from_json(const nlohmann::json& j, Settings& s)
     s.auth.password = j["vp"]["auth"]["password"].get<std::string>();
     s.bot.name = j["vp"]["bot"]["name"].get<std::string>();
     s.bot.world = j["vp"]["bot"]["world"].get<std::string>();
+	s.bot.x = j["vp"]["bot"]["x"].get<int>();
+	s.bot.z = j["vp"]["bot"]["z"].get<int>();
 }
 
 void from_json(const nlohmann::json& j, Message& m)
