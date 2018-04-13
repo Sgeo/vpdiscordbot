@@ -160,9 +160,10 @@ client.on('message', message => {
  * This is super cludge-y, oh well.
  */
 client.on('error', err => {
+    console.log(err);
     client.destroy();
     client = new Discord.Client();
-    client.login(token);
+    client.login(discord_config.token);
 });
 
 function heartbeat() {
