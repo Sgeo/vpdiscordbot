@@ -50,7 +50,7 @@ struct websocket_client {
     websocket::stream<tcp::socket> ws;
     std::mutex read_mtx;
     std::mutex reconnect_mtx;
-    vpdiscordbot::Settings * settings;
+    vpdiscordbot::Settings * settings = NULL;
     std::atomic_bool isAlive;
 
     std::vector<vpdiscordbot::Message> messages_to_send;
@@ -59,7 +59,7 @@ struct websocket_client {
     bool connected = true;
 
     websocket_client() : ioc{}, resolver{ ioc }, ws{ ioc }, messages_to_send{}, isAlive{ true } {
-        connect();
+        
     }
 
     void close() {
@@ -84,7 +84,18 @@ struct websocket_client {
     }
 
     void connect() {
-        auto const results = resolver.resolve("localhost", "7414");
+		printf("Attempting to connect\n");
+		char portstring[6];
+		printf("Created portstring buffer\n");
+
+		if (settings == NULL) {
+			printf("Settings is NULL\n");
+		}
+
+		snprintf(portstring, 6, "%d", settings->port);
+		printf("Successfully executed snprintf");
+        auto const results = resolver.resolve("localhost", portstring);
+		printf("Successfully executed resolve");
         bool connected = false;
         bool upgraded = false;
 
@@ -197,8 +208,6 @@ int main(int argc, char ** argv) {
 
     client = &websocket;
 
-    thread ws_service(websocket_service);
-
     try {
         settings = vpdiscordbot::GetSettingsFromFile("../../Configuration/bot-configuration.json");
     } catch (exception& err) {
@@ -207,6 +216,12 @@ int main(int argc, char ** argv) {
     }
 
     websocket.settings = &settings;
+
+	websocket.connect();
+
+	printf("Port should be %d", settings.port);
+
+	thread ws_service(websocket_service);
 
     int err = 0;
 
