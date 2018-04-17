@@ -11,7 +11,7 @@ namespace vpdiscordbot {
 
 struct AuthSection
 {
-    std::string username;
+    int username;
     std::string password;
 };
 
@@ -19,12 +19,15 @@ struct BotSection
 {
     std::string name;
     std::string world;
+	int x;
+	int z;
 };
 
 struct Settings
 {
     AuthSection auth;
     BotSection bot;
+	int port;
 };
 
 struct Message {
@@ -41,15 +44,22 @@ void from_json(const nlohmann::json& j, Settings& s)
         j["vp"]["auth"].count("username") == 0 ||
         j["vp"]["auth"].count("password") == 0 ||
         j["vp"]["bot"].count("name") == 0 ||
-        j["vp"]["bot"].count("world") == 0 )
+        j["vp"]["bot"].count("world") == 0  ||
+		j["vp"]["bot"].count("x") == 0 ||
+		j["vp"]["bot"].count("z") == 0 ||
+		j.count("both") == 0 ||
+		j["both"].count("port") == 0)
     {
         throw std::runtime_error("Malformed settings file!");
     }
 
-	s.auth.username = j["vp"]["auth"]["username"].get<std::string>();
+	s.auth.username = j["vp"]["auth"]["username"].get<int>();
     s.auth.password = j["vp"]["auth"]["password"].get<std::string>();
     s.bot.name = j["vp"]["bot"]["name"].get<std::string>();
     s.bot.world = j["vp"]["bot"]["world"].get<std::string>();
+	s.bot.x = j["vp"]["bot"]["x"].get<int>();
+	s.bot.z = j["vp"]["bot"]["z"].get<int>();
+	s.port = j["both"]["port"].get<int>();
 }
 
 void from_json(const nlohmann::json& j, Message& m)

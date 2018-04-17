@@ -2,16 +2,21 @@ const Discord = require('discord.js');
 const WebSocket = require('ws');
 const fs = require('fs');
 
-let client = new Discord.Client();
-const wss = new WebSocket.Server({ port: 7414 });
-let ws_client = undefined;
+
 
 let guild = undefined;
 let channel_id = undefined;
 let webhook = undefined;
 let mqueue = undefined; // Empty queue.
 
-const discord_config = JSON.parse(fs.readFileSync('../Configuration/bot-configuration.json', 'utf8')).discord;
+const config = JSON.parse(fs.readFileSync('../Configuration/bot-configuration.json', 'utf8'));
+const discord_config = config.discord;
+const both_config = config.both;
+
+let client = new Discord.Client();
+const wss = new WebSocket.Server({ port: both_config.port});
+let ws_client = undefined;
+
 let av_list = JSON.parse(fs.readFileSync('../Configuration/avs-db.json', 'utf8'));
 let col_list = JSON.parse(fs.readFileSync('../Configuration/cols-db.json', 'utf8'));
 
@@ -90,6 +95,9 @@ client.on('ready', () => {
 client.on('message', message => {
     console.log(message.content);
     let username = message.author.username;
+    if(message.member && message.member.nickname) {
+        username = message.member.nickname;
+    }
     if (ws_client != undefined && !message.author.bot && channel_id == message.channel.id) {
         // Let's format the message.
 
@@ -157,9 +165,10 @@ client.on('message', message => {
  * This is super cludge-y, oh well.
  */
 client.on('error', err => {
+    console.log(err);
     client.destroy();
     client = new Discord.Client();
-    client.login(token);
+    client.login(discord_config.token);
 });
 
 function heartbeat() {
